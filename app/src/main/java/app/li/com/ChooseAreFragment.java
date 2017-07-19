@@ -1,6 +1,7 @@
 package app.li.com;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -106,11 +107,31 @@ public class ChooseAreFragment extends Fragment {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (currentLevel==LEVEL_PROVINCE){
                     selectedProvice=provinceList.get(i);
-                    Log.v("TAG","======selectedProvice======.."+selectedProvice);
+
                     queryCities();
                 }else if (currentLevel==LEVEL_CITY){
                     selectedCity=cityList.get(i);
                     queryCounties();
+                }else if (currentLevel==LEVEL_COUNTY){
+
+                    String weatherId=countyList.get(i).getWeatherId();
+
+                    if (getActivity() instanceof MainActivity){
+
+                        Intent intent=new Intent(getActivity(),WeatherActivity.class);
+                        intent.putExtra("weather_id",weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }else if (getActivity() instanceof WeatherActivity){
+                        WeatherActivity activity= (WeatherActivity) getActivity();
+                        activity.drawerLayout.closeDrawers();
+                        activity.swipeRefresh.setRefreshing(true);
+                        Log.v("CCC","=====else if=========>>"+weatherId);
+                        activity.requestWeather(weatherId);
+                    }
+
+
+
                 }
             }
         });
@@ -163,12 +184,14 @@ public class ChooseAreFragment extends Fragment {
 
         titleText.setText(selectedCity.getCityName());
         backButton.setVisibility(View.VISIBLE);
+        Log.v("TAG","======selectedCity.getId=======>>>"+selectedCity.getId());
         countyList=DataSupport.where("cityid=?",String.valueOf(selectedCity.getId())).find(County.class);
         if (countyList.size()>0){
             dataList.clear();
             for (County county:countyList
                  ) {
                 dataList.add(county.getCountyName());
+                Log.v("TAG","======county.getCountyName=======>>>"+county.getCountyName());
             }
 
             adapter.notifyDataSetChanged();
@@ -178,7 +201,8 @@ public class ChooseAreFragment extends Fragment {
         }else {
 
             int provinceCode=selectedProvice.getProvinceCode();
-            int cityCode=selectedCity.getProvinceId();
+            int cityCode=selectedCity.getCityCode();
+            Log.v("TT","===============>>>"+provinceCode+cityCode);
             String address="http://guolin.tech/api/china/"+provinceCode+"/"+cityCode;
 
             queryFromServer(address,"county");
@@ -196,7 +220,6 @@ public class ChooseAreFragment extends Fragment {
     private void queryCities() {
 
         titleText.setText(selectedProvice.getProvinceName());
-        Log.v("TAG","===selectedProvice.getProvinceName()=====>>"+selectedProvice.getProvinceName());
         backButton.setVisibility(View.VISIBLE);
         cityList=DataSupport.where("provinceid=?",String.valueOf(selectedProvice.getId())).find(City.class);
         if (cityList.size()>0){
@@ -207,12 +230,11 @@ public class ChooseAreFragment extends Fragment {
             }
 
             adapter.notifyDataSetChanged();
-            listView.setAdapter(adapter);
+            listView.setSelection(0);
             currentLevel=LEVEL_CITY;
         }else {
 
             int provinceCode=selectedProvice.getProvinceCode();
-            Log.v("TAG","=====provinceCode=========>>"+provinceCode);
             String address="http://guolin.tech/api/china/"+provinceCode;
             queryFromServer(address,"city");
         }
@@ -251,11 +273,9 @@ public class ChooseAreFragment extends Fragment {
                 }else if ("city".equals(type)){
 
                     result=Utility.handleCityResponse(responseText,selectedProvice.getId());
-                    Log.v("TAG","=====result==11=======>>"+result);
                 }else if("county".equals(type)){
                     result=Utility.handleCoutyResponse(responseText,selectedCity.getId());
                 }
-                Log.v("TAG","=====result==222=======>>"+result);
                 if (result){
                     getActivity().runOnUiThread(new Runnable() {
                         @Override

@@ -3,6 +3,8 @@ package app.li.com.util;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.google.gson.Gson;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -10,6 +12,7 @@ import org.json.JSONObject;
 import app.li.com.db.City;
 import app.li.com.db.County;
 import app.li.com.db.Province;
+import app.li.com.gson.Weather;
 
 /**
  * Created by Lee on 2017/7/13.
@@ -101,6 +104,9 @@ public class Utility {
                     county.setCountyName(countyObject.getString("name"));
                     county.setWeatherId(countyObject.getString("weather_id"));
                     county.setCityId(cityId);
+                    Log.v("TAG","========countyObject.getString=======>"+countyObject.getString("name"));
+                    Log.v("TAG","========countyObject.getString=======>"+countyObject.getString("weather_id"));
+                    Log.v("TAG","========cityId=======>"+cityId);
                     county.save();
 
                 }
@@ -114,6 +120,29 @@ public class Utility {
         }
 
         return false;
+    }
+
+
+    /**
+     * 将返回的JSON数据解析成Weather实体
+     * @param response
+     * @return
+     */
+    public static Weather handleWeatherResponese(String response){
+
+
+        try {
+            JSONObject jsonObject=new JSONObject(response);
+            JSONArray jsonArray=jsonObject.getJSONArray("HeWeather");
+            String weatherContent=jsonArray.getJSONObject(0).toString();
+            return new Gson().fromJson(weatherContent,Weather.class);
+
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
 
